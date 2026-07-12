@@ -24,3 +24,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "Vinilo"
 include(":app")
+include(":musikr")
