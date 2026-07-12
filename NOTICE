@@ -1,0 +1,50 @@
+Vinilo
+Copyright (C) 2026 Anderson Collaguazo
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+------------------------------------------------------------------------
+
+Third-party code vendored in this repository:
+
+musikr (module :musikr)
+  Source:  https://github.com/OxygenCobalt/Auxio (dev branch, package
+           org.oxycblt.musikr)
+  License: GNU General Public License v3.0
+  Notes:   Vendored verbatim/adapted from the Auxio project. Provides local
+           music scanning (Storage Access Framework), tag extraction (via
+           TagLib), cover art handling, playlist storage and caching. Not
+           written by the Vinilo project; all credit for its design and
+           implementation belongs to the Auxio authors and contributors.
+
+TagLib (native library, musikr/src/main/cpp/taglib)
+  Source:  https://github.com/taglib/taglib
+  License: GNU Lesser General Public License v2.1 / Mozilla Public License 1.1
+           (dual-licensed; see upstream COPYING files)
+  Notes:   Used by musikr via JNI for audio metadata extraction.
+
+Planned integrations (not yet vendored, to be added in future phases):
+
+  - NewPipeExtractor (https://github.com/TeamNewPipe/NewPipeExtractor) —
+    GNU General Public License v3.0. Will be used to extract audio streams
+    from YouTube search results. Vinilo does not act as a YouTube client;
+    videos are never played, only their audio is used.
+  - MusicBrainz (https://musicbrainz.org) — public API, used to enrich
+    metadata for downloaded tracks.
+  - Cover Art Archive (https://coverartarchive.org) — public API, used as a
+    fallback source for album artwork.
+
+Vinilo is an independent project and is not affiliated with, endorsed by,
+or sponsored by the Auxio, TagLib, NewPipe, MusicBrainz, or YouTube
+projects/trademark owners.
