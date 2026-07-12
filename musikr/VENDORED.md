@@ -11,7 +11,9 @@ project, not written by Vinilo.
 
 `src/main/cpp/taglib` is [TagLib](https://github.com/taglib/taglib), vendored at tag
 `ee1931b` (the same revision Auxio pins via git submodule), copied without the `.git`
-history.
+history. TagLib itself pins its own submodule,
+[utfcpp](https://github.com/nemtrif/utfcpp), at commit `df857efc5bbc2aa84012d865f7d7e9cccdc08562`
+(`taglib/3rdparty/utfcpp`), vendored the same way.
 
 ## Changes made to adapt it into Vinilo
 
