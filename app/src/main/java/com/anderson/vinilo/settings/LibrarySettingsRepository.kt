@@ -25,6 +25,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.anderson.vinilo.library.LibraryTab
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -56,6 +57,23 @@ class LibrarySettingsRepository @Inject constructor(@ApplicationContext private 
     suspend fun removeCustomFolder(uri: Uri) {
         context.libraryDataStore.edit { prefs ->
             prefs[customFolderUrisKey] = prefs[customFolderUrisKey].orEmpty() - uri.toString()
+        }
+    }
+
+    private val hiddenTabTypesKey = stringSetPreferencesKey("hidden_tab_types")
+
+    val hiddenTabs: Flow<Set<LibraryTab>> =
+        context.libraryDataStore.data.map { prefs ->
+            prefs[hiddenTabTypesKey].orEmpty()
+                .mapNotNull { name -> runCatching { LibraryTab.valueOf(name) }.getOrNull() }
+                .toSet() - LibraryTab.SONGS
+        }
+
+    suspend fun setTabHidden(tab: LibraryTab, hidden: Boolean) {
+        if (tab == LibraryTab.SONGS) return
+        context.libraryDataStore.edit { prefs ->
+            val current = prefs[hiddenTabTypesKey].orEmpty()
+            prefs[hiddenTabTypesKey] = if (hidden) current + tab.name else current - tab.name
         }
     }
 }

@@ -44,7 +44,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -65,8 +64,6 @@ private val AUDIO_PERMISSION =
         Manifest.permission.READ_EXTERNAL_STORAGE
     }
 
-private val TAB_TITLES = listOf("Canciones", "Álbumes", "Artistas", "Géneros", "Playlists")
-
 @Composable
 fun LibraryScreen(
     playbackViewModel: PlaybackViewModel,
@@ -82,7 +79,12 @@ fun LibraryScreen(
     val context = LocalContext.current
     val library by viewModel.library.collectAsStateWithLifecycle()
     val indexing by viewModel.indexing.collectAsStateWithLifecycle()
-    var selectedTab by remember { mutableIntStateOf(0) }
+    val hiddenTabs by viewModel.hiddenTabs.collectAsStateWithLifecycle(initialValue = emptySet())
+    val visibleTabs = remember(hiddenTabs) { LibraryTab.entries.filterNot { it in hiddenTabs } }
+    var selectedTab by remember { mutableStateOf(LibraryTab.SONGS) }
+    LaunchedEffect(visibleTabs) {
+        if (selectedTab !in visibleTabs) selectedTab = LibraryTab.SONGS
+    }
 
     var hasAudioPermission by remember {
         mutableStateOf(
@@ -133,27 +135,31 @@ fun LibraryScreen(
             return@Column
         }
 
-        PrimaryScrollableTabRow(selectedTabIndex = selectedTab, edgePadding = 0.dp) {
-            TAB_TITLES.forEachIndexed { index, title ->
+        PrimaryScrollableTabRow(
+            selectedTabIndex = visibleTabs.indexOf(selectedTab).coerceAtLeast(0),
+            edgePadding = 0.dp,
+        ) {
+            visibleTabs.forEach { tab ->
                 Tab(
-                    selected = selectedTab == index,
-                    onClick = { selectedTab = index },
-                    text = { Text(title) },
+                    selected = selectedTab == tab,
+                    onClick = { selectedTab = tab },
+                    text = { Text(tab.title) },
                 )
             }
         }
 
         when (selectedTab) {
-            0 ->
+            LibraryTab.SONGS ->
                 SongsTab(
                     songs = library?.songs?.sortedBy { it.name.raw }.orEmpty(),
                     indexing = indexing,
                     playbackViewModel = playbackViewModel,
                 )
-            1 -> AlbumsTab(albums = library?.albums.orEmpty(), onOpenAlbum = onOpenAlbum)
-            2 -> ArtistsTab(artists = library?.artists.orEmpty(), onOpenArtist = onOpenArtist)
-            3 -> GenresTab(genres = library?.genres.orEmpty(), onOpenGenre = onOpenGenre)
-            4 -> PlaylistsTab(playlists = library?.playlists.orEmpty(), onOpenPlaylist = onOpenPlaylist)
+            LibraryTab.ALBUMS -> AlbumsTab(albums = library?.albums.orEmpty(), onOpenAlbum = onOpenAlbum)
+            LibraryTab.ARTISTS -> ArtistsTab(artists = library?.artists.orEmpty(), onOpenArtist = onOpenArtist)
+            LibraryTab.GENRES -> GenresTab(genres = library?.genres.orEmpty(), onOpenGenre = onOpenGenre)
+            LibraryTab.PLAYLISTS ->
+                PlaylistsTab(playlists = library?.playlists.orEmpty(), onOpenPlaylist = onOpenPlaylist)
         }
     }
 }

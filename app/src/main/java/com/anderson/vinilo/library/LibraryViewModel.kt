@@ -22,16 +22,22 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.anderson.vinilo.music.MusicRepository
+import com.anderson.vinilo.settings.LibrarySettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.launch
 
 @HiltViewModel
-class LibraryViewModel @Inject constructor(private val musicRepository: MusicRepository) :
-    ViewModel() {
+class LibraryViewModel
+@Inject
+constructor(
+    private val musicRepository: MusicRepository,
+    private val librarySettings: LibrarySettingsRepository,
+) : ViewModel() {
     val library = musicRepository.library
     val indexing = musicRepository.indexing
     val customFolderUris = musicRepository.customFolderUris
+    val hiddenTabs = librarySettings.hiddenTabs
 
     fun onAudioPermissionGranted() {
         viewModelScope.launch { musicRepository.rescan() }
@@ -43,5 +49,9 @@ class LibraryViewModel @Inject constructor(private val musicRepository: MusicRep
 
     fun onRemoveFolder(uri: Uri) {
         viewModelScope.launch { musicRepository.removeCustomFolder(uri) }
+    }
+
+    fun onToggleTabVisible(tab: LibraryTab, visible: Boolean) {
+        viewModelScope.launch { librarySettings.setTabHidden(tab, hidden = !visible) }
     }
 }

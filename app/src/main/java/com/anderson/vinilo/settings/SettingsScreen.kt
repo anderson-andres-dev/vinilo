@@ -32,11 +32,16 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.CreateNewFolder
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.QueueMusic
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -46,11 +51,13 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.anderson.vinilo.library.LibraryTab
 import com.anderson.vinilo.library.LibraryViewModel
 
 @Composable
 fun SettingsScreen(onBack: () -> Unit, viewModel: LibraryViewModel = hiltViewModel()) {
     val customFolders by viewModel.customFolderUris.collectAsStateWithLifecycle(initialValue = emptySet())
+    val hiddenTabs by viewModel.hiddenTabs.collectAsStateWithLifecycle(initialValue = emptySet())
 
     val folderPicker =
         rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
@@ -85,8 +92,41 @@ fun SettingsScreen(onBack: () -> Unit, viewModel: LibraryViewModel = hiltViewMod
                 }
             }
         }
+
+        Text(
+            text = "Pestañas visibles",
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(top = 24.dp, bottom = 8.dp),
+        )
+        LibraryTab.TOGGLEABLE.forEach { tab ->
+            SettingsToggleRow(
+                icon = iconFor(tab),
+                title = tab.title,
+                description = descriptionFor(tab),
+                checked = tab !in hiddenTabs,
+                onCheckedChange = { checked -> viewModel.onToggleTabVisible(tab, checked) },
+            )
+        }
     }
 }
+
+private fun iconFor(tab: LibraryTab): ImageVector =
+    when (tab) {
+        LibraryTab.ALBUMS -> Icons.Filled.Album
+        LibraryTab.ARTISTS -> Icons.Filled.Person
+        LibraryTab.GENRES -> Icons.Filled.MusicNote
+        LibraryTab.PLAYLISTS -> Icons.Filled.QueueMusic
+        LibraryTab.SONGS -> error("Songs tab has no Settings toggle")
+    }
+
+private fun descriptionFor(tab: LibraryTab): String =
+    when (tab) {
+        LibraryTab.ALBUMS -> "Mostrar la pestaña Álbumes en la biblioteca."
+        LibraryTab.ARTISTS -> "Mostrar la pestaña Artistas en la biblioteca."
+        LibraryTab.GENRES -> "Mostrar la pestaña Géneros en la biblioteca."
+        LibraryTab.PLAYLISTS -> "Mostrar la pestaña Playlists en la biblioteca."
+        LibraryTab.SONGS -> error("Songs tab has no Settings toggle")
+    }
 
 @Composable
 private fun SettingsActionRow(
@@ -114,6 +154,32 @@ private fun SettingsActionRow(
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+    }
+}
+
+@Composable
+private fun SettingsToggleRow(
+    icon: ImageVector,
+    title: String,
+    description: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(imageVector = icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+        Column(modifier = Modifier.padding(start = 16.dp).weight(1f)) {
+            Text(text = title, style = MaterialTheme.typography.bodyLarge)
+            Text(
+                text = description,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 2.dp),
+            )
+        }
+        Switch(checked = checked, onCheckedChange = onCheckedChange)
     }
 }
 
