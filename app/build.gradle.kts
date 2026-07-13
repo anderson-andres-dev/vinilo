@@ -7,11 +7,7 @@ plugins {
 
 android {
     namespace = "com.anderson.vinilo"
-    compileSdk {
-        version = release(36) {
-            minorApiLevel = 1
-        }
-    }
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.anderson.vinilo"
@@ -67,6 +63,7 @@ dependencies {
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.palette)
+    implementation(libs.kyant.taglib)
 
     coreLibraryDesugaring(libs.desugar.jdk.libs)
 
