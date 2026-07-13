@@ -29,6 +29,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavType
@@ -59,8 +60,9 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            ViniloTheme {
-                val playbackViewModel: PlaybackViewModel = hiltViewModel()
+            val playbackViewModel: PlaybackViewModel = hiltViewModel()
+            val coverAccentColors by playbackViewModel.coverAccentColors.collectAsStateWithLifecycle()
+            ViniloTheme(coverAccentColors = coverAccentColors) {
                 val navController = rememberNavController()
                 val currentRoute =
                     navController.currentBackStackEntryAsState().value?.destination?.route

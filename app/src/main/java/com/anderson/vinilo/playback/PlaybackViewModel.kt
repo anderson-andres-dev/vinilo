@@ -29,7 +29,10 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import com.anderson.vinilo.music.MusicRepository
+import com.anderson.vinilo.settings.LibrarySettingsRepository
 import com.anderson.vinilo.ui.display
+import com.anderson.vinilo.ui.theme.CoverAccentColors
+import com.anderson.vinilo.ui.theme.extractCoverAccentColors
 import com.google.common.util.concurrent.MoreExecutors
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -38,10 +41,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -60,6 +66,8 @@ data class NowPlayingUiState(
     val song: Song
         get() = queue[currentIndex]
 }
+
+private data class ArtworkResult(val artworkData: ByteArray?, val accentColors: CoverAccentColors?)
 
 private fun nextRepeatMode(current: Int): Int =
     when (current) {
@@ -83,13 +91,23 @@ class PlaybackViewModel
 constructor(
     @ApplicationContext private val context: Context,
     private val musicRepository: MusicRepository,
+    private val librarySettingsRepository: LibrarySettingsRepository,
 ) : ViewModel() {
     private var controller: MediaController? = null
     private var tickerJob: Job? = null
-    private val artworkCache = mutableMapOf<Music.UID, ByteArray?>()
+    private val artworkCache = mutableMapOf<Music.UID, ArtworkResult>()
 
     private val _uiState = MutableStateFlow<NowPlayingUiState?>(null)
     val uiState: StateFlow<NowPlayingUiState?> = _uiState.asStateFlow()
+
+    private val _coverAccentColorsRaw = MutableStateFlow<CoverAccentColors?>(null)
+    val coverAccentColors: StateFlow<CoverAccentColors?> =
+        combine(_coverAccentColorsRaw, librarySettingsRepository.dynamicCoverColorEnabled) {
+                colors,
+                enabled ->
+                if (enabled) colors else null
+            }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     init {
         val sessionToken = SessionToken(context, ComponentName(context, PlaybackService::class.java))
@@ -206,14 +224,19 @@ constructor(
     private fun loadArtworkInto(index: Int) {
         val song = _uiState.value?.queue?.getOrNull(index) ?: return
         viewModelScope.launch {
-            val artworkData =
+            val result =
                 artworkCache.getOrPut(song.uid) {
-                    withContext(Dispatchers.IO) { song.cover?.open()?.use { it.readBytes() } }
+                    val bytes =
+                        withContext(Dispatchers.IO) { song.cover?.open()?.use { it.readBytes() } }
+                    val accent =
+                        bytes?.let { withContext(Dispatchers.Default) { extractCoverAccentColors(it) } }
+                    ArtworkResult(bytes, accent)
                 }
             val current = controller ?: return@launch
             // Bail if the queue moved on while we were reading the file.
             if (_uiState.value?.queue?.getOrNull(index)?.uid != song.uid) return@launch
-            current.replaceMediaItem(index, buildMediaItem(song, artworkData))
+            current.replaceMediaItem(index, buildMediaItem(song, result.artworkData))
+            _coverAccentColorsRaw.value = result.accentColors
         }
     }
 
@@ -292,6 +315,7 @@ constructor(
             clearMediaItems()
         }
         _uiState.value = null
+        _coverAccentColorsRaw.value = null
     }
 
     override fun onCleared() {

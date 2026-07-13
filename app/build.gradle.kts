@@ -66,6 +66,7 @@ dependencies {
 
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.navigation.compose)
+    implementation(libs.androidx.palette)
 
     coreLibraryDesugaring(libs.desugar.jdk.libs)
 

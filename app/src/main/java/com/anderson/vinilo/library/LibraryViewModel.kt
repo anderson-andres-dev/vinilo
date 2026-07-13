@@ -38,6 +38,7 @@ constructor(
     val indexing = musicRepository.indexing
     val customFolderUris = musicRepository.customFolderUris
     val hiddenTabs = librarySettings.hiddenTabs
+    val dynamicCoverColorEnabled = librarySettings.dynamicCoverColorEnabled
 
     fun onAudioPermissionGranted() {
         viewModelScope.launch { musicRepository.rescan() }
@@ -53,5 +54,9 @@ constructor(
 
     fun onToggleTabVisible(tab: LibraryTab, visible: Boolean) {
         viewModelScope.launch { librarySettings.setTabHidden(tab, hidden = !visible) }
+    }
+
+    fun onToggleDynamicCoverColor(enabled: Boolean) {
+        viewModelScope.launch { librarySettings.setDynamicCoverColorEnabled(enabled) }
     }
 }

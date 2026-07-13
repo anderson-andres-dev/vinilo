@@ -22,6 +22,7 @@ import android.content.Context
 import android.net.Uri
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -36,8 +37,10 @@ private val Context.libraryDataStore: DataStore<Preferences> by
     preferencesDataStore(name = "library_settings")
 
 /**
- * Persists the extra SAF folders the user has manually added on top of the device-wide
- * MediaStore-backed default library (see [com.anderson.vinilo.music.MusicRepository]).
+ * Persists library/app preferences: the extra SAF folders the user has manually added on top of
+ * the device-wide MediaStore-backed default library (see
+ * [com.anderson.vinilo.music.MusicRepository]), which library tabs are hidden, and appearance
+ * preferences like dynamic cover-based color.
  */
 @Singleton
 class LibrarySettingsRepository @Inject constructor(@ApplicationContext private val context: Context) {
@@ -75,5 +78,14 @@ class LibrarySettingsRepository @Inject constructor(@ApplicationContext private 
             val current = prefs[hiddenTabTypesKey].orEmpty()
             prefs[hiddenTabTypesKey] = if (hidden) current + tab.name else current - tab.name
         }
+    }
+
+    private val dynamicCoverColorEnabledKey = booleanPreferencesKey("dynamic_cover_color_enabled")
+
+    val dynamicCoverColorEnabled: Flow<Boolean> =
+        context.libraryDataStore.data.map { prefs -> prefs[dynamicCoverColorEnabledKey] ?: true }
+
+    suspend fun setDynamicCoverColorEnabled(enabled: Boolean) {
+        context.libraryDataStore.edit { prefs -> prefs[dynamicCoverColorEnabledKey] = enabled }
     }
 }

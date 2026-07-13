@@ -36,6 +36,7 @@ import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.CreateNewFolder
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.QueueMusic
 import androidx.compose.material3.Icon
@@ -58,6 +59,8 @@ import com.anderson.vinilo.library.LibraryViewModel
 fun SettingsScreen(onBack: () -> Unit, viewModel: LibraryViewModel = hiltViewModel()) {
     val customFolders by viewModel.customFolderUris.collectAsStateWithLifecycle(initialValue = emptySet())
     val hiddenTabs by viewModel.hiddenTabs.collectAsStateWithLifecycle(initialValue = emptySet())
+    val dynamicCoverColorEnabled by
+        viewModel.dynamicCoverColorEnabled.collectAsStateWithLifecycle(initialValue = true)
 
     val folderPicker =
         rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
@@ -107,6 +110,19 @@ fun SettingsScreen(onBack: () -> Unit, viewModel: LibraryViewModel = hiltViewMod
                 onCheckedChange = { checked -> viewModel.onToggleTabVisible(tab, checked) },
             )
         }
+
+        Text(
+            text = "Apariencia",
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(top = 24.dp, bottom = 8.dp),
+        )
+        SettingsToggleRow(
+            icon = Icons.Filled.Palette,
+            title = "Color dinámico desde la portada",
+            description = "Adapta los colores de la app a la portada de la canción que estás escuchando.",
+            checked = dynamicCoverColorEnabled,
+            onCheckedChange = { checked -> viewModel.onToggleDynamicCoverColor(checked) },
+        )
     }
 }
 
