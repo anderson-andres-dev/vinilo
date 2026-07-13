@@ -18,63 +18,38 @@
 
 package com.anderson.vinilo
 
-import android.content.ComponentName
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.MusicNote
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.media3.common.MediaItem
 import androidx.media3.common.util.UnstableApi
-import androidx.media3.session.MediaController
-import androidx.media3.session.SessionToken
-import com.anderson.vinilo.library.LibraryViewModel
-import com.anderson.vinilo.playback.PlaybackService
+import androidx.navigation.NavBackStackEntry
+import androidx.navigation.NavType
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import com.anderson.vinilo.library.AlbumDetailScreen
+import com.anderson.vinilo.library.ArtistDetailScreen
+import com.anderson.vinilo.library.GenreDetailScreen
+import com.anderson.vinilo.library.LibraryScreen
+import com.anderson.vinilo.library.PlaylistDetailScreen
+import com.anderson.vinilo.playback.CompactPlayerBar
+import com.anderson.vinilo.playback.NowPlayingScreen
+import com.anderson.vinilo.playback.PlaybackViewModel
+import com.anderson.vinilo.playback.QueueScreen
+import com.anderson.vinilo.settings.SettingsScreen
 import com.anderson.vinilo.ui.theme.ViniloTheme
-import com.google.common.util.concurrent.MoreExecutors
 import dagger.hilt.android.AndroidEntryPoint
-import org.oxycblt.musikr.Song
-import org.oxycblt.musikr.covers.Cover
-import org.oxycblt.musikr.tag.Name
+import org.oxycblt.musikr.Music
 
 @UnstableApi
 @AndroidEntryPoint
@@ -84,107 +59,105 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             ViniloTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    LibraryScreen(modifier = Modifier.padding(innerPadding))
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun LibraryScreen(
-    modifier: Modifier = Modifier,
-    viewModel: LibraryViewModel = hiltViewModel(),
-) {
-    val context = LocalContext.current
-    val library by viewModel.library.collectAsStateWithLifecycle()
-    val indexing by viewModel.indexing.collectAsStateWithLifecycle()
-    val songs = library?.songs?.sortedBy { it.name.raw }.orEmpty()
-
-    var controller by remember { mutableStateOf<MediaController?>(null) }
-    LaunchedEffect(Unit) {
-        val sessionToken = SessionToken(context, ComponentName(context, PlaybackService::class.java))
-        controller =
-            MediaController.Builder(context, sessionToken)
-                .buildAsync()
-                .let { future ->
-                    future.addListener({}, MoreExecutors.directExecutor())
-                    future.get()
-                }
-    }
-
-    val folderPicker =
-        rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
-            if (uri != null) viewModel.onFolderChosen(uri)
-        }
-
-    Column(modifier = modifier.fillMaxSize().padding(16.dp)) {
-        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Button(onClick = { folderPicker.launch(null) }) { Text("Elegir carpeta de música") }
-            if (indexing) {
-                CircularProgressIndicator(modifier = Modifier.padding(start = 16.dp).size(24.dp))
-            }
-        }
-        if (songs.isEmpty() && !indexing) {
-            Text(
-                text = "Sin canciones todavía. Elige una carpeta con música.",
-                modifier = Modifier.padding(top = 24.dp),
-            )
-        }
-        LazyColumn(modifier = Modifier.fillMaxSize().padding(top = 16.dp)) {
-            items(songs, key = { it.uid }) { song ->
-                SongRow(
-                    song = song,
-                    onClick = {
-                        controller?.apply {
-                            setMediaItem(MediaItem.fromUri(song.uri))
-                            prepare()
-                            play()
+                val playbackViewModel: PlaybackViewModel = hiltViewModel()
+                val navController = rememberNavController()
+                val currentRoute =
+                    navController.currentBackStackEntryAsState().value?.destination?.route
+                Scaffold(
+                    modifier = Modifier.fillMaxSize(),
+                    bottomBar = {
+                        if (currentRoute != "nowPlaying") {
+                            CompactPlayerBar(
+                                viewModel = playbackViewModel,
+                                onOpenNowPlaying = { navController.navigate("nowPlaying") },
+                            )
                         }
                     },
-                )
+                ) { innerPadding ->
+                    NavHost(
+                        navController = navController,
+                        startDestination = "library",
+                        modifier = Modifier.padding(innerPadding),
+                    ) {
+                        composable("library") {
+                            LibraryScreen(
+                                playbackViewModel = playbackViewModel,
+                                onOpenSettings = { navController.navigate("settings") },
+                                onOpenAlbum = { uid -> navController.navigate("album/${uid.encoded()}") },
+                                onOpenArtist = { uid -> navController.navigate("artist/${uid.encoded()}") },
+                                onOpenGenre = { uid -> navController.navigate("genre/${uid.encoded()}") },
+                                onOpenPlaylist = { uid -> navController.navigate("playlist/${uid.encoded()}") },
+                            )
+                        }
+                        composable("settings") {
+                            SettingsScreen(onBack = { navController.popBackStack() })
+                        }
+                        composable("nowPlaying") {
+                            NowPlayingScreen(
+                                viewModel = playbackViewModel,
+                                onBack = { navController.popBackStack() },
+                                onOpenQueue = { navController.navigate("queue") },
+                            )
+                        }
+                        composable("queue") {
+                            QueueScreen(
+                                viewModel = playbackViewModel,
+                                onBack = { navController.popBackStack() },
+                            )
+                        }
+                        composable(
+                            "album/{uid}",
+                            arguments = listOf(navArgument("uid") { type = NavType.StringType }),
+                        ) { backStackEntry ->
+                            val uid = backStackEntry.decodedUid() ?: return@composable
+                            AlbumDetailScreen(
+                                uid = uid,
+                                playbackViewModel = playbackViewModel,
+                                onBack = { navController.popBackStack() },
+                            )
+                        }
+                        composable(
+                            "artist/{uid}",
+                            arguments = listOf(navArgument("uid") { type = NavType.StringType }),
+                        ) { backStackEntry ->
+                            val uid = backStackEntry.decodedUid() ?: return@composable
+                            ArtistDetailScreen(
+                                uid = uid,
+                                playbackViewModel = playbackViewModel,
+                                onBack = { navController.popBackStack() },
+                                onOpenAlbum = { albumUid -> navController.navigate("album/${albumUid.encoded()}") },
+                            )
+                        }
+                        composable(
+                            "genre/{uid}",
+                            arguments = listOf(navArgument("uid") { type = NavType.StringType }),
+                        ) { backStackEntry ->
+                            val uid = backStackEntry.decodedUid() ?: return@composable
+                            GenreDetailScreen(
+                                uid = uid,
+                                playbackViewModel = playbackViewModel,
+                                onBack = { navController.popBackStack() },
+                            )
+                        }
+                        composable(
+                            "playlist/{uid}",
+                            arguments = listOf(navArgument("uid") { type = NavType.StringType }),
+                        ) { backStackEntry ->
+                            val uid = backStackEntry.decodedUid() ?: return@composable
+                            PlaylistDetailScreen(
+                                uid = uid,
+                                playbackViewModel = playbackViewModel,
+                                onBack = { navController.popBackStack() },
+                            )
+                        }
+                    }
+                }
             }
         }
     }
 }
 
-@Composable
-private fun SongRow(song: Song, onClick: () -> Unit) {
-    Row(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        CoverThumbnail(cover = song.cover)
-        Column(modifier = Modifier.padding(start = 12.dp)) {
-            Text(text = song.name.raw, style = MaterialTheme.typography.bodyLarge)
-            Text(
-                text = song.artists.joinToString { it.name.display() }.ifEmpty { "Artista desconocido" },
-                style = MaterialTheme.typography.bodyMedium,
-            )
-        }
-    }
-}
+private fun Music.UID.encoded(): String = Uri.encode(toString())
 
-@Composable
-private fun CoverThumbnail(cover: Cover?) {
-    val bitmap by
-        produceState<Bitmap?>(initialValue = null, key1 = cover?.id) {
-            value = cover?.open()?.use { BitmapFactory.decodeStream(it) }
-        }
-    Box(
-        modifier =
-            Modifier.size(48.dp)
-                .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp)),
-        contentAlignment = Alignment.Center,
-    ) {
-        val loadedBitmap = bitmap
-        if (loadedBitmap != null) {
-            Image(bitmap = loadedBitmap.asImageBitmap(), contentDescription = null)
-        } else {
-            Icon(imageVector = Icons.Filled.MusicNote, contentDescription = null)
-        }
-    }
-}
-
-private fun Name.display(): String = (this as? Name.Known)?.raw ?: "Desconocido"
+private fun NavBackStackEntry.decodedUid(): Music.UID? =
+    arguments?.getString("uid")?.let { Music.UID.fromString(Uri.decode(it)) }
