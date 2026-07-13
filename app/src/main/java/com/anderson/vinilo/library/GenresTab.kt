@@ -56,7 +56,7 @@ fun GenresTab(genres: Collection<Genre>, onOpenGenre: (Music.UID) -> Unit) {
 }
 
 @Composable
-private fun GenreRow(genre: Genre, onClick: () -> Unit) {
+fun GenreRow(genre: Genre, onClick: () -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,

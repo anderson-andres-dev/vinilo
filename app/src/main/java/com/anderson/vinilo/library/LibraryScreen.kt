@@ -32,6 +32,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -70,6 +71,7 @@ private val TAB_TITLES = listOf("Canciones", "Álbumes", "Artistas", "Géneros",
 fun LibraryScreen(
     playbackViewModel: PlaybackViewModel,
     onOpenSettings: () -> Unit,
+    onOpenSearch: () -> Unit,
     onOpenAlbum: (Music.UID) -> Unit,
     onOpenArtist: (Music.UID) -> Unit,
     onOpenGenre: (Music.UID) -> Unit,
@@ -114,8 +116,13 @@ fun LibraryScreen(
                     )
                 }
             }
-            IconButton(onClick = onOpenSettings) {
-                Icon(imageVector = Icons.Filled.Settings, contentDescription = "Configuración")
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = onOpenSearch) {
+                    Icon(imageVector = Icons.Filled.Search, contentDescription = "Buscar")
+                }
+                IconButton(onClick = onOpenSettings) {
+                    Icon(imageVector = Icons.Filled.Settings, contentDescription = "Configuración")
+                }
             }
         }
         if (!hasAudioPermission) {

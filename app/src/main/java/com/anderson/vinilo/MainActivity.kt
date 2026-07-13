@@ -46,6 +46,7 @@ import com.anderson.vinilo.playback.CompactPlayerBar
 import com.anderson.vinilo.playback.NowPlayingScreen
 import com.anderson.vinilo.playback.PlaybackViewModel
 import com.anderson.vinilo.playback.QueueScreen
+import com.anderson.vinilo.search.SearchScreen
 import com.anderson.vinilo.settings.SettingsScreen
 import com.anderson.vinilo.ui.theme.ViniloTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -83,6 +84,7 @@ class MainActivity : ComponentActivity() {
                             LibraryScreen(
                                 playbackViewModel = playbackViewModel,
                                 onOpenSettings = { navController.navigate("settings") },
+                                onOpenSearch = { navController.navigate("search") },
                                 onOpenAlbum = { uid -> navController.navigate("album/${uid.encoded()}") },
                                 onOpenArtist = { uid -> navController.navigate("artist/${uid.encoded()}") },
                                 onOpenGenre = { uid -> navController.navigate("genre/${uid.encoded()}") },
@@ -91,6 +93,16 @@ class MainActivity : ComponentActivity() {
                         }
                         composable("settings") {
                             SettingsScreen(onBack = { navController.popBackStack() })
+                        }
+                        composable("search") {
+                            SearchScreen(
+                                playbackViewModel = playbackViewModel,
+                                onBack = { navController.popBackStack() },
+                                onOpenAlbum = { uid -> navController.navigate("album/${uid.encoded()}") },
+                                onOpenArtist = { uid -> navController.navigate("artist/${uid.encoded()}") },
+                                onOpenGenre = { uid -> navController.navigate("genre/${uid.encoded()}") },
+                                onOpenPlaylist = { uid -> navController.navigate("playlist/${uid.encoded()}") },
+                            )
                         }
                         composable("nowPlaying") {
                             NowPlayingScreen(

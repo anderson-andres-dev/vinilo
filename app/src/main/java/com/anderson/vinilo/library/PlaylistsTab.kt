@@ -62,7 +62,7 @@ fun PlaylistsTab(playlists: Collection<Playlist>, onOpenPlaylist: (Music.UID) ->
 }
 
 @Composable
-private fun PlaylistRow(playlist: Playlist, onClick: () -> Unit) {
+fun PlaylistRow(playlist: Playlist, onClick: () -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
