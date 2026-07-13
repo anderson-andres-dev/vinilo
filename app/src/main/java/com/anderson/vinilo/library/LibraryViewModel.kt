@@ -31,8 +31,17 @@ class LibraryViewModel @Inject constructor(private val musicRepository: MusicRep
     ViewModel() {
     val library = musicRepository.library
     val indexing = musicRepository.indexing
+    val customFolderUris = musicRepository.customFolderUris
+
+    fun onAudioPermissionGranted() {
+        viewModelScope.launch { musicRepository.rescan() }
+    }
 
     fun onFolderChosen(uri: Uri) {
-        viewModelScope.launch { musicRepository.scan(uri) }
+        viewModelScope.launch { musicRepository.addCustomFolder(uri) }
+    }
+
+    fun onRemoveFolder(uri: Uri) {
+        viewModelScope.launch { musicRepository.removeCustomFolder(uri) }
     }
 }
