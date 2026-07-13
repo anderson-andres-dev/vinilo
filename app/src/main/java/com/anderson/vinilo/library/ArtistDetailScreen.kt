@@ -45,6 +45,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.anderson.vinilo.music.excludingHidden
 import com.anderson.vinilo.playback.PlaybackViewModel
 import com.anderson.vinilo.ui.CoverThumbnail
 import com.anderson.vinilo.ui.SongListItem
@@ -68,7 +69,8 @@ fun ArtistDetailScreen(
     }
     if (artist == null) return
 
-    val songs = artist.songs.sortedBy { it.name.raw }
+    val hiddenSongs by libraryViewModel.hiddenSongs.collectAsStateWithLifecycle(initialValue = emptySet())
+    val songs = artist.songs.excludingHidden(hiddenSongs).sortedBy { it.name.raw }
     val albums = artistAlbums(artist).sortedBy { it.name.display() }
     val playbackState by playbackViewModel.uiState.collectAsStateWithLifecycle()
 
@@ -96,7 +98,7 @@ fun ArtistDetailScreen(
                     text =
                         "${pluralize(albums.size, "álbum", "álbumes")} · " +
                             "${pluralize(songs.size, "canción", "canciones")} · " +
-                            (artist.durationMs ?: 0).formatDuration(),
+                            songs.sumOf { it.durationMs }.formatDuration(),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 4.dp),
@@ -125,7 +127,7 @@ fun ArtistDetailScreen(
         }
         items(albums, key = { it.uid }) { album ->
             Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                AlbumRow(album = album, onClick = { onOpenAlbum(album.uid) })
+                AlbumRow(album = album, hiddenSongs = hiddenSongs, onClick = { onOpenAlbum(album.uid) })
             }
         }
         item {

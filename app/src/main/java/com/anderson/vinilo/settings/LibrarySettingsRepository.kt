@@ -28,6 +28,7 @@ import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.anderson.vinilo.library.LibraryTab
 import dagger.hilt.android.qualifiers.ApplicationContext
+import org.oxycblt.musikr.Music
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
@@ -87,5 +88,28 @@ class LibrarySettingsRepository @Inject constructor(@ApplicationContext private 
 
     suspend fun setDynamicCoverColorEnabled(enabled: Boolean) {
         context.libraryDataStore.edit { prefs -> prefs[dynamicCoverColorEnabledKey] = enabled }
+    }
+
+    private val hiddenSongUidsKey = stringSetPreferencesKey("hidden_song_uids")
+
+    val hiddenSongs: Flow<Set<Music.UID>> =
+        context.libraryDataStore.data.map { prefs ->
+            prefs[hiddenSongUidsKey].orEmpty().mapNotNull { Music.UID.fromString(it) }.toSet()
+        }
+
+    suspend fun setSongHidden(uid: Music.UID, hidden: Boolean) {
+        context.libraryDataStore.edit { prefs ->
+            val current = prefs[hiddenSongUidsKey].orEmpty()
+            prefs[hiddenSongUidsKey] = if (hidden) current + uid.toString() else current - uid.toString()
+        }
+    }
+
+    private val swipeGesturesSwappedKey = booleanPreferencesKey("swipe_gestures_swapped")
+
+    val swipeGesturesSwapped: Flow<Boolean> =
+        context.libraryDataStore.data.map { prefs -> prefs[swipeGesturesSwappedKey] ?: false }
+
+    suspend fun setSwipeGesturesSwapped(swapped: Boolean) {
+        context.libraryDataStore.edit { prefs -> prefs[swipeGesturesSwappedKey] = swapped }
     }
 }

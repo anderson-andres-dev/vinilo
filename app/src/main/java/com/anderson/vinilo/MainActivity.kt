@@ -26,7 +26,10 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -38,6 +41,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.anderson.vinilo.edit.EditSongScreen
 import com.anderson.vinilo.library.AlbumDetailScreen
 import com.anderson.vinilo.library.ArtistDetailScreen
 import com.anderson.vinilo.library.GenreDetailScreen
@@ -66,8 +70,10 @@ class MainActivity : ComponentActivity() {
                 val navController = rememberNavController()
                 val currentRoute =
                     navController.currentBackStackEntryAsState().value?.destination?.route
+                val snackbarHostState = remember { SnackbarHostState() }
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
+                    snackbarHost = { SnackbarHost(snackbarHostState) },
                     bottomBar = {
                         if (currentRoute != "nowPlaying") {
                             CompactPlayerBar(
@@ -85,12 +91,14 @@ class MainActivity : ComponentActivity() {
                         composable("library") {
                             LibraryScreen(
                                 playbackViewModel = playbackViewModel,
+                                snackbarHostState = snackbarHostState,
                                 onOpenSettings = { navController.navigate("settings") },
                                 onOpenSearch = { navController.navigate("search") },
                                 onOpenAlbum = { uid -> navController.navigate("album/${uid.encoded()}") },
                                 onOpenArtist = { uid -> navController.navigate("artist/${uid.encoded()}") },
                                 onOpenGenre = { uid -> navController.navigate("genre/${uid.encoded()}") },
                                 onOpenPlaylist = { uid -> navController.navigate("playlist/${uid.encoded()}") },
+                                onEditSong = { uid -> navController.navigate("editSong/${uid.encoded()}") },
                             )
                         }
                         composable("settings") {
@@ -163,6 +171,13 @@ class MainActivity : ComponentActivity() {
                                 playbackViewModel = playbackViewModel,
                                 onBack = { navController.popBackStack() },
                             )
+                        }
+                        composable(
+                            "editSong/{uid}",
+                            arguments = listOf(navArgument("uid") { type = NavType.StringType }),
+                        ) { backStackEntry ->
+                            val uid = backStackEntry.decodedUid() ?: return@composable
+                            EditSongScreen(uid = uid, onBack = { navController.popBackStack() })
                         }
                     }
                 }

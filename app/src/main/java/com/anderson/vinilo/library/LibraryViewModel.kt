@@ -26,6 +26,7 @@ import com.anderson.vinilo.settings.LibrarySettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.launch
+import org.oxycblt.musikr.Music
 
 @HiltViewModel
 class LibraryViewModel
@@ -39,6 +40,8 @@ constructor(
     val customFolderUris = musicRepository.customFolderUris
     val hiddenTabs = librarySettings.hiddenTabs
     val dynamicCoverColorEnabled = librarySettings.dynamicCoverColorEnabled
+    val hiddenSongs = librarySettings.hiddenSongs
+    val swipeGesturesSwapped = librarySettings.swipeGesturesSwapped
 
     fun onAudioPermissionGranted() {
         viewModelScope.launch { musicRepository.rescan() }
@@ -58,5 +61,13 @@ constructor(
 
     fun onToggleDynamicCoverColor(enabled: Boolean) {
         viewModelScope.launch { librarySettings.setDynamicCoverColorEnabled(enabled) }
+    }
+
+    fun onSetSongHidden(uid: Music.UID, hidden: Boolean) {
+        viewModelScope.launch { librarySettings.setSongHidden(uid, hidden) }
+    }
+
+    fun onToggleSwipeGesturesSwapped(swapped: Boolean) {
+        viewModelScope.launch { librarySettings.setSwipeGesturesSwapped(swapped) }
     }
 }

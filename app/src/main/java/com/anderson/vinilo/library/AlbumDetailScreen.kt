@@ -47,6 +47,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.anderson.vinilo.music.excludingHidden
 import com.anderson.vinilo.playback.PlaybackViewModel
 import com.anderson.vinilo.ui.CoverThumbnail
 import com.anderson.vinilo.ui.PlayingIndicator
@@ -56,6 +57,7 @@ import com.anderson.vinilo.ui.formatDuration
 import com.anderson.vinilo.ui.pluralize
 import org.oxycblt.musikr.Album
 import org.oxycblt.musikr.Music
+import org.oxycblt.musikr.Song
 
 @Composable
 fun AlbumDetailScreen(
@@ -71,7 +73,10 @@ fun AlbumDetailScreen(
     }
     if (album == null) return
 
-    val songs = album.songs.sortedWith(compareBy({ it.disc?.number ?: 0 }, { it.track ?: Int.MAX_VALUE }))
+    val hiddenSongs by libraryViewModel.hiddenSongs.collectAsStateWithLifecycle(initialValue = emptySet())
+    val songs =
+        album.songs.excludingHidden(hiddenSongs)
+            .sortedWith(compareBy({ it.disc?.number ?: 0 }, { it.track ?: Int.MAX_VALUE }))
     val playbackState by playbackViewModel.uiState.collectAsStateWithLifecycle()
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -94,7 +99,7 @@ fun AlbumDetailScreen(
                 maxLines = 2,
             )
             Text(
-                text = albumMetaLine(album),
+                text = albumMetaLine(album, songs),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 4.dp),
@@ -140,14 +145,14 @@ fun AlbumDetailScreen(
     }
 }
 
-private fun albumMetaLine(album: Album): String {
+private fun albumMetaLine(album: Album, songs: List<Song>): String {
     val artist = album.artists.joinToString { it.name.display() }.ifEmpty { "Artista desconocido" }
     val year = album.dates?.min?.year
     return listOfNotNull(
             artist,
             year?.toString(),
-            pluralize(album.songs.size, "canción", "canciones"),
-            album.durationMs.formatDuration(),
+            pluralize(songs.size, "canción", "canciones"),
+            songs.sumOf { it.durationMs }.formatDuration(),
         )
         .joinToString(" · ")
 }

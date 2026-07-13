@@ -21,6 +21,8 @@ package com.anderson.vinilo.search
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.anderson.vinilo.music.MusicRepository
+import com.anderson.vinilo.music.excludingHidden
+import com.anderson.vinilo.settings.LibrarySettingsRepository
 import com.anderson.vinilo.ui.display
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -66,18 +68,29 @@ data class SearchResults(
 }
 
 @HiltViewModel
-class SearchViewModel @Inject constructor(private val musicRepository: MusicRepository) :
-    ViewModel() {
+class SearchViewModel
+@Inject
+constructor(
+    private val musicRepository: MusicRepository,
+    private val librarySettings: LibrarySettingsRepository,
+) : ViewModel() {
     private val _query = MutableStateFlow("")
     val query: StateFlow<String> = _query.asStateFlow()
 
     private val _activeTypes = MutableStateFlow(SearchType.entries.toSet())
     val activeTypes: StateFlow<Set<SearchType>> = _activeTypes.asStateFlow()
 
+    val hiddenSongs: StateFlow<Set<Music.UID>> =
+        librarySettings.hiddenSongs.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptySet())
+
     // Recomputing a filter{} pass over Collection<Song/Album/...> on every keystroke is fine at
     // this app's scale (hundreds to low thousands of local files) -- no debounce needed.
     val results: StateFlow<SearchResults> =
-        combine(musicRepository.library, _query, _activeTypes) { library, query, types ->
+        combine(musicRepository.library, _query, _activeTypes, librarySettings.hiddenSongs) {
+                library,
+                query,
+                types,
+                hiddenSongs ->
                 if (library == null || query.isBlank()) {
                     SearchResults.EMPTY
                 } else {
@@ -92,8 +105,11 @@ class SearchViewModel @Inject constructor(private val musicRepository: MusicRepo
                             if (SearchType.GENRE in types) library.genres.matching(query)
                             else emptyList(),
                         songs =
-                            if (SearchType.SONG in types) library.songs.matching(query)
-                            else emptyList(),
+                            if (SearchType.SONG in types) {
+                                library.songs.matching(query).excludingHidden(hiddenSongs)
+                            } else {
+                                emptyList()
+                            },
                         playlists =
                             if (SearchType.PLAYLIST in types) library.playlists.matching(query)
                             else emptyList(),

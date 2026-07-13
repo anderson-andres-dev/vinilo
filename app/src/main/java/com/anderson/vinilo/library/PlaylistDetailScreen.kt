@@ -45,6 +45,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.anderson.vinilo.music.excludingHidden
 import com.anderson.vinilo.playback.PlaybackViewModel
 import com.anderson.vinilo.ui.CoverThumbnail
 import com.anderson.vinilo.ui.SongListItem
@@ -67,7 +68,8 @@ fun PlaylistDetailScreen(
     }
     if (playlist == null) return
 
-    val songs = playlist.songs
+    val hiddenSongs by libraryViewModel.hiddenSongs.collectAsStateWithLifecycle(initialValue = emptySet())
+    val songs = playlist.songs.excludingHidden(hiddenSongs)
     val playbackState by playbackViewModel.uiState.collectAsStateWithLifecycle()
 
     LazyColumn(modifier = Modifier.fillMaxSize()) {
@@ -93,7 +95,7 @@ fun PlaylistDetailScreen(
                 Text(
                     text =
                         "${pluralize(songs.size, "canción", "canciones")} · " +
-                            playlist.durationMs.formatDuration(),
+                            songs.sumOf { it.durationMs }.formatDuration(),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 4.dp),

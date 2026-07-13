@@ -82,6 +82,7 @@ fun SearchScreen(
     val query by viewModel.query.collectAsStateWithLifecycle()
     val activeTypes by viewModel.activeTypes.collectAsStateWithLifecycle()
     val results by viewModel.results.collectAsStateWithLifecycle()
+    val hiddenSongs by viewModel.hiddenSongs.collectAsStateWithLifecycle()
     val playbackState by playbackViewModel.uiState.collectAsStateWithLifecycle()
 
     val focusRequester = remember { FocusRequester() }
@@ -148,7 +149,7 @@ fun SearchScreen(
                         item { SectionHeader("Artistas") }
                         items(results.artists, key = { it.uid }) { artist ->
                             PaddedRow {
-                                ArtistRow(artist = artist, onClick = { onOpenArtist(artist.uid) })
+                                ArtistRow(artist = artist, hiddenSongs = hiddenSongs, onClick = { onOpenArtist(artist.uid) })
                             }
                         }
                     }
@@ -156,7 +157,7 @@ fun SearchScreen(
                         item { SectionHeader("Álbumes") }
                         items(results.albums, key = { it.uid }) { album ->
                             PaddedRow {
-                                AlbumRow(album = album, onClick = { onOpenAlbum(album.uid) })
+                                AlbumRow(album = album, hiddenSongs = hiddenSongs, onClick = { onOpenAlbum(album.uid) })
                             }
                         }
                     }
@@ -164,7 +165,7 @@ fun SearchScreen(
                         item { SectionHeader("Géneros") }
                         items(results.genres, key = { it.uid }) { genre ->
                             PaddedRow {
-                                GenreRow(genre = genre, onClick = { onOpenGenre(genre.uid) })
+                                GenreRow(genre = genre, hiddenSongs = hiddenSongs, onClick = { onOpenGenre(genre.uid) })
                             }
                         }
                     }
@@ -184,7 +185,11 @@ fun SearchScreen(
                         item { SectionHeader("Playlists") }
                         items(results.playlists, key = { it.uid }) { playlist ->
                             PaddedRow {
-                                PlaylistRow(playlist = playlist, onClick = { onOpenPlaylist(playlist.uid) })
+                                PlaylistRow(
+                                    playlist = playlist,
+                                    hiddenSongs = hiddenSongs,
+                                    onClick = { onOpenPlaylist(playlist.uid) },
+                                )
                             }
                         }
                     }

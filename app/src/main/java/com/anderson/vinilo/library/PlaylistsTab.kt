@@ -37,12 +37,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.anderson.vinilo.music.excludingHidden
 import com.anderson.vinilo.ui.pluralize
 import org.oxycblt.musikr.Music
 import org.oxycblt.musikr.Playlist
 
 @Composable
-fun PlaylistsTab(playlists: Collection<Playlist>, onOpenPlaylist: (Music.UID) -> Unit) {
+fun PlaylistsTab(playlists: Collection<Playlist>, hiddenSongs: Set<Music.UID>, onOpenPlaylist: (Music.UID) -> Unit) {
     val sorted = playlists.sortedBy { it.name.raw }
     if (sorted.isEmpty()) {
         Text(
@@ -56,13 +57,13 @@ fun PlaylistsTab(playlists: Collection<Playlist>, onOpenPlaylist: (Music.UID) ->
         contentPadding = PaddingValues(horizontal = 16.dp),
     ) {
         items(sorted, key = { it.uid }) { playlist ->
-            PlaylistRow(playlist = playlist, onClick = { onOpenPlaylist(playlist.uid) })
+            PlaylistRow(playlist = playlist, hiddenSongs = hiddenSongs, onClick = { onOpenPlaylist(playlist.uid) })
         }
     }
 }
 
 @Composable
-fun PlaylistRow(playlist: Playlist, onClick: () -> Unit) {
+fun PlaylistRow(playlist: Playlist, hiddenSongs: Set<Music.UID>, onClick: () -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -76,7 +77,7 @@ fun PlaylistRow(playlist: Playlist, onClick: () -> Unit) {
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
-                text = pluralize(playlist.songs.size, "canción", "canciones"),
+                text = pluralize(playlist.songs.excludingHidden(hiddenSongs).size, "canción", "canciones"),
                 style = MaterialTheme.typography.bodyMedium,
             )
         }

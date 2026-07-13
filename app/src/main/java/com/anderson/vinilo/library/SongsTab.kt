@@ -22,19 +22,34 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anderson.vinilo.playback.PlaybackViewModel
-import com.anderson.vinilo.ui.SongListItem
+import com.anderson.vinilo.ui.SwipeableSongRow
+import kotlinx.coroutines.launch
+import org.oxycblt.musikr.Music
 import org.oxycblt.musikr.Song
 
 @Composable
-fun SongsTab(songs: List<Song>, indexing: Boolean, playbackViewModel: PlaybackViewModel) {
+fun SongsTab(
+    songs: List<Song>,
+    indexing: Boolean,
+    playbackViewModel: PlaybackViewModel,
+    swipeGesturesSwapped: Boolean,
+    snackbarHostState: SnackbarHostState,
+    onEditSong: (Music.UID) -> Unit,
+    onSetSongHidden: (Music.UID, Boolean) -> Unit,
+) {
     val playbackState by playbackViewModel.uiState.collectAsStateWithLifecycle()
+    val scope = rememberCoroutineScope()
 
     if (songs.isEmpty() && !indexing) {
         Text(
@@ -45,13 +60,30 @@ fun SongsTab(songs: List<Song>, indexing: Boolean, playbackViewModel: PlaybackVi
     }
     LazyColumn(modifier = Modifier.fillMaxSize()) {
         itemsIndexed(songs, key = { _, song -> song.uid }) { index, song ->
-            val isCurrent = playbackState?.song?.uid == song.uid
-            SongListItem(
-                song = song,
-                isCurrent = isCurrent,
-                isPlaying = isCurrent && playbackState?.isPlaying == true,
-                onClick = { playbackViewModel.play(songs, index) },
-            )
+            key(song.uid) {
+                val isCurrent = playbackState?.song?.uid == song.uid
+                SwipeableSongRow(
+                    song = song,
+                    isCurrent = isCurrent,
+                    isPlaying = isCurrent && playbackState?.isPlaying == true,
+                    swipeGesturesSwapped = swipeGesturesSwapped,
+                    onClick = { playbackViewModel.play(songs, index) },
+                    onEdit = { onEditSong(song.uid) },
+                    onHide = {
+                        onSetSongHidden(song.uid, true)
+                        scope.launch {
+                            val result =
+                                snackbarHostState.showSnackbar(
+                                    message = "Canción oculta",
+                                    actionLabel = "Deshacer",
+                                )
+                            if (result == SnackbarResult.ActionPerformed) {
+                                onSetSongHidden(song.uid, false)
+                            }
+                        }
+                    },
+                )
+            }
         }
     }
 }

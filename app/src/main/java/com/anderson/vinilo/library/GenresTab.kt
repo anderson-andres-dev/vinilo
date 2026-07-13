@@ -37,26 +37,27 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.anderson.vinilo.music.excludingHidden
 import com.anderson.vinilo.ui.display
 import com.anderson.vinilo.ui.pluralize
 import org.oxycblt.musikr.Genre
 import org.oxycblt.musikr.Music
 
 @Composable
-fun GenresTab(genres: Collection<Genre>, onOpenGenre: (Music.UID) -> Unit) {
+fun GenresTab(genres: Collection<Genre>, hiddenSongs: Set<Music.UID>, onOpenGenre: (Music.UID) -> Unit) {
     val sorted = genres.sortedBy { it.name.display() }
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(horizontal = 16.dp),
     ) {
         items(sorted, key = { it.uid }) { genre ->
-            GenreRow(genre = genre, onClick = { onOpenGenre(genre.uid) })
+            GenreRow(genre = genre, hiddenSongs = hiddenSongs, onClick = { onOpenGenre(genre.uid) })
         }
     }
 }
 
 @Composable
-fun GenreRow(genre: Genre, onClick: () -> Unit) {
+fun GenreRow(genre: Genre, hiddenSongs: Set<Music.UID>, onClick: () -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -72,7 +73,7 @@ fun GenreRow(genre: Genre, onClick: () -> Unit) {
             Text(
                 text =
                     "${pluralize(genre.artists.size, "artista", "artistas")} · " +
-                        pluralize(genre.songs.size, "canción", "canciones"),
+                        pluralize(genre.songs.excludingHidden(hiddenSongs).size, "canción", "canciones"),
                 style = MaterialTheme.typography.bodyMedium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,

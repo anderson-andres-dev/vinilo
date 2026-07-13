@@ -34,6 +34,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.anderson.vinilo.music.excludingHidden
 import com.anderson.vinilo.ui.CoverThumbnail
 import com.anderson.vinilo.ui.display
 import com.anderson.vinilo.ui.pluralize
@@ -41,20 +42,20 @@ import org.oxycblt.musikr.Album
 import org.oxycblt.musikr.Music
 
 @Composable
-fun AlbumsTab(albums: Collection<Album>, onOpenAlbum: (Music.UID) -> Unit) {
+fun AlbumsTab(albums: Collection<Album>, hiddenSongs: Set<Music.UID>, onOpenAlbum: (Music.UID) -> Unit) {
     val sorted = albums.sortedBy { it.name.display() }
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(horizontal = 16.dp),
     ) {
         items(sorted, key = { it.uid }) { album ->
-            AlbumRow(album = album, onClick = { onOpenAlbum(album.uid) })
+            AlbumRow(album = album, hiddenSongs = hiddenSongs, onClick = { onOpenAlbum(album.uid) })
         }
     }
 }
 
 @Composable
-fun AlbumRow(album: Album, onClick: () -> Unit) {
+fun AlbumRow(album: Album, hiddenSongs: Set<Music.UID>, onClick: () -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -68,7 +69,7 @@ fun AlbumRow(album: Album, onClick: () -> Unit) {
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
-                text = albumSubtitle(album),
+                text = albumSubtitle(album, hiddenSongs),
                 style = MaterialTheme.typography.bodyMedium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -77,9 +78,10 @@ fun AlbumRow(album: Album, onClick: () -> Unit) {
     }
 }
 
-private fun albumSubtitle(album: Album): String {
+private fun albumSubtitle(album: Album, hiddenSongs: Set<Music.UID>): String {
     val artist = album.artists.joinToString { it.name.display() }.ifEmpty { "Artista desconocido" }
     val year = album.dates?.min?.year
-    return listOfNotNull(artist, year?.toString(), pluralize(album.songs.size, "canción", "canciones"))
+    val songCount = album.songs.excludingHidden(hiddenSongs).size
+    return listOfNotNull(artist, year?.toString(), pluralize(songCount, "canción", "canciones"))
         .joinToString(" · ")
 }

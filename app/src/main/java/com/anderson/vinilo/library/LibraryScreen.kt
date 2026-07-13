@@ -39,6 +39,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryScrollableTabRow
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -54,6 +55,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.anderson.vinilo.music.excludingHidden
 import com.anderson.vinilo.playback.PlaybackViewModel
 import org.oxycblt.musikr.Music
 
@@ -67,12 +69,14 @@ private val AUDIO_PERMISSION =
 @Composable
 fun LibraryScreen(
     playbackViewModel: PlaybackViewModel,
+    snackbarHostState: SnackbarHostState,
     onOpenSettings: () -> Unit,
     onOpenSearch: () -> Unit,
     onOpenAlbum: (Music.UID) -> Unit,
     onOpenArtist: (Music.UID) -> Unit,
     onOpenGenre: (Music.UID) -> Unit,
     onOpenPlaylist: (Music.UID) -> Unit,
+    onEditSong: (Music.UID) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: LibraryViewModel = hiltViewModel(),
 ) {
@@ -80,6 +84,9 @@ fun LibraryScreen(
     val library by viewModel.library.collectAsStateWithLifecycle()
     val indexing by viewModel.indexing.collectAsStateWithLifecycle()
     val hiddenTabs by viewModel.hiddenTabs.collectAsStateWithLifecycle(initialValue = emptySet())
+    val hiddenSongs by viewModel.hiddenSongs.collectAsStateWithLifecycle(initialValue = emptySet())
+    val swipeGesturesSwapped by
+        viewModel.swipeGesturesSwapped.collectAsStateWithLifecycle(initialValue = false)
     val visibleTabs = remember(hiddenTabs) { LibraryTab.entries.filterNot { it in hiddenTabs } }
     var selectedTab by remember { mutableStateOf(LibraryTab.SONGS) }
     LaunchedEffect(visibleTabs) {
@@ -151,15 +158,26 @@ fun LibraryScreen(
         when (selectedTab) {
             LibraryTab.SONGS ->
                 SongsTab(
-                    songs = library?.songs?.sortedBy { it.name.raw }.orEmpty(),
+                    songs = library?.songs?.excludingHidden(hiddenSongs)?.sortedBy { it.name.raw }.orEmpty(),
                     indexing = indexing,
                     playbackViewModel = playbackViewModel,
+                    swipeGesturesSwapped = swipeGesturesSwapped,
+                    snackbarHostState = snackbarHostState,
+                    onEditSong = onEditSong,
+                    onSetSongHidden = viewModel::onSetSongHidden,
                 )
-            LibraryTab.ALBUMS -> AlbumsTab(albums = library?.albums.orEmpty(), onOpenAlbum = onOpenAlbum)
-            LibraryTab.ARTISTS -> ArtistsTab(artists = library?.artists.orEmpty(), onOpenArtist = onOpenArtist)
-            LibraryTab.GENRES -> GenresTab(genres = library?.genres.orEmpty(), onOpenGenre = onOpenGenre)
+            LibraryTab.ALBUMS ->
+                AlbumsTab(albums = library?.albums.orEmpty(), hiddenSongs = hiddenSongs, onOpenAlbum = onOpenAlbum)
+            LibraryTab.ARTISTS ->
+                ArtistsTab(artists = library?.artists.orEmpty(), hiddenSongs = hiddenSongs, onOpenArtist = onOpenArtist)
+            LibraryTab.GENRES ->
+                GenresTab(genres = library?.genres.orEmpty(), hiddenSongs = hiddenSongs, onOpenGenre = onOpenGenre)
             LibraryTab.PLAYLISTS ->
-                PlaylistsTab(playlists = library?.playlists.orEmpty(), onOpenPlaylist = onOpenPlaylist)
+                PlaylistsTab(
+                    playlists = library?.playlists.orEmpty(),
+                    hiddenSongs = hiddenSongs,
+                    onOpenPlaylist = onOpenPlaylist,
+                )
         }
     }
 }

@@ -23,6 +23,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -31,6 +32,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.CompareArrows
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.CreateNewFolder
@@ -61,47 +63,58 @@ fun SettingsScreen(onBack: () -> Unit, viewModel: LibraryViewModel = hiltViewMod
     val hiddenTabs by viewModel.hiddenTabs.collectAsStateWithLifecycle(initialValue = emptySet())
     val dynamicCoverColorEnabled by
         viewModel.dynamicCoverColorEnabled.collectAsStateWithLifecycle(initialValue = true)
+    val swipeGesturesSwapped by
+        viewModel.swipeGesturesSwapped.collectAsStateWithLifecycle(initialValue = false)
 
     val folderPicker =
         rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
             if (uri != null) viewModel.onFolderChosen(uri)
         }
 
-    Column(modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 8.dp)) {
-            IconButton(onClick = onBack) {
-                Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
-            }
-            Text(text = "Configuración", style = MaterialTheme.typography.titleLarge)
-        }
-
-        Text(
-            text = "Biblioteca",
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(top = 24.dp, bottom = 8.dp),
-        )
-        SettingsActionRow(
-            icon = Icons.Filled.CreateNewFolder,
-            title = "Agregar carpeta",
-            description = "Vinilo ya escanea toda la música del dispositivo automáticamente. " +
-                "Sumá una carpeta solo si tenés música en un lugar que no se detecta solo.",
-            onClick = { folderPicker.launch(null) },
-        )
-
-        if (customFolders.isNotEmpty()) {
-            LazyColumn(modifier = Modifier.padding(top = 8.dp)) {
-                items(customFolders.toList(), key = { it.toString() }) { uri ->
-                    CustomFolderRow(uri = uri, onRemove = { viewModel.onRemoveFolder(uri) })
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(horizontal = 24.dp),
+    ) {
+        item {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(top = 8.dp),
+            ) {
+                IconButton(onClick = onBack) {
+                    Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
                 }
+                Text(text = "Configuración", style = MaterialTheme.typography.titleLarge)
             }
         }
 
-        Text(
-            text = "Pestañas visibles",
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(top = 24.dp, bottom = 8.dp),
-        )
-        LibraryTab.TOGGLEABLE.forEach { tab ->
+        item {
+            Text(
+                text = "Biblioteca",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(top = 24.dp, bottom = 8.dp),
+            )
+        }
+        item {
+            SettingsActionRow(
+                icon = Icons.Filled.CreateNewFolder,
+                title = "Agregar carpeta",
+                description = "Vinilo ya escanea toda la música del dispositivo automáticamente. " +
+                    "Sumá una carpeta solo si tenés música en un lugar que no se detecta solo.",
+                onClick = { folderPicker.launch(null) },
+            )
+        }
+        items(customFolders.toList(), key = { it.toString() }) { uri ->
+            CustomFolderRow(uri = uri, onRemove = { viewModel.onRemoveFolder(uri) })
+        }
+
+        item {
+            Text(
+                text = "Pestañas visibles",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(top = 24.dp, bottom = 8.dp),
+            )
+        }
+        items(LibraryTab.TOGGLEABLE, key = { it.name }) { tab ->
             SettingsToggleRow(
                 icon = iconFor(tab),
                 title = tab.title,
@@ -111,18 +124,39 @@ fun SettingsScreen(onBack: () -> Unit, viewModel: LibraryViewModel = hiltViewMod
             )
         }
 
-        Text(
-            text = "Apariencia",
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(top = 24.dp, bottom = 8.dp),
-        )
-        SettingsToggleRow(
-            icon = Icons.Filled.Palette,
-            title = "Color dinámico desde la portada",
-            description = "Adapta los colores de la app a la portada de la canción que estás escuchando.",
-            checked = dynamicCoverColorEnabled,
-            onCheckedChange = { checked -> viewModel.onToggleDynamicCoverColor(checked) },
-        )
+        item {
+            Text(
+                text = "Gestos",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(top = 24.dp, bottom = 8.dp),
+            )
+        }
+        item {
+            SettingsToggleRow(
+                icon = Icons.AutoMirrored.Filled.CompareArrows,
+                title = "Invertir gestos de deslizar",
+                description = "Por defecto: deslizar a la derecha para editar, a la izquierda para quitar.",
+                checked = swipeGesturesSwapped,
+                onCheckedChange = { checked -> viewModel.onToggleSwipeGesturesSwapped(checked) },
+            )
+        }
+
+        item {
+            Text(
+                text = "Apariencia",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(top = 24.dp, bottom = 8.dp),
+            )
+        }
+        item {
+            SettingsToggleRow(
+                icon = Icons.Filled.Palette,
+                title = "Color dinámico desde la portada",
+                description = "Adapta los colores de la app a la portada de la canción que estás escuchando.",
+                checked = dynamicCoverColorEnabled,
+                onCheckedChange = { checked -> viewModel.onToggleDynamicCoverColor(checked) },
+            )
+        }
     }
 }
 
